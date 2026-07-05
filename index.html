@@ -1,0 +1,702 @@
+<!DOCTYPE html>  
+<html>  
+<head>  
+    <meta charset="UTF-8">  
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">  
+    <title>PIXEL 2D IKY</title>  
+    <style>  
+        * { margin:0; padding:0; touch-action:none; user-select:none; box-sizing:border-box; }  
+        body {  
+            background: #050505;  
+            display: flex;  
+            justify-content: center;  
+            align-items: center;  
+            height: 100vh; width: 100vw;  
+            overflow: hidden;  
+            font-family: 'Courier New', monospace;  
+        }  
+        
+        /* FIX TOTAL: Menggunakan 100% Tinggi & Lebar Layar agar Full Screen Tanpa Terpotong */
+        .ratio-wrapper {
+            position: relative;
+            width: 100%; 
+            height: 100%; 
+            overflow: hidden;  
+            background: #182316;
+            pointer-events: auto;
+        }
+
+        /* --- SCREEN: LOGIN / MAIN MENU --- */
+        #loginScreen {  
+            position: absolute;  
+            top: 0; left: 0;  
+            width: 100%; height: 100%;  
+            display: flex;  
+            justify-content: center;  
+            align-items: center;  
+            background: #141b24;  
+            z-index: 10;  
+            transition: opacity 0.4s ease;  
+            padding: 10px;
+        }  
+        #loginScreen.hidden {  
+            opacity: 0;  
+            pointer-events: none;  
+        }  
+        #loginBox {  
+            background: #1a2430;  
+            padding: 15px;  
+            border: 4px solid #3b5a78;  
+            text-align: center;  
+            width: 90%; height: 90%;  
+            max-width: 500px;
+            max-height: 280px; /* Membatasi box agar tidak meluber di HP pendek */
+            display: flex;  
+            flex-direction: column;  
+            justify-content: center;  
+            align-items: center;  
+        }  
+        #loginBox h1 {  
+            font-size: clamp(20px, 4.5vw, 36px);  
+            color: #fff;  
+            text-shadow: 3px 3px 0 #0d131a;  
+            margin-bottom: 2px;  
+            letter-spacing: 2px;  
+        }  
+        #loginBox p {  
+            color: #8da399;  
+            font-size: clamp(10px, 1.8vw, 13px);  
+            margin-bottom: 15px;  
+        }  
+        
+        /* FIX TEKS VERSI: Menggunakan koordinat aman dari sudut bawah browser */
+        .game-version {
+            position: absolute;
+            bottom: 12px;
+            left: 16px;
+            color: #aaddaa;
+            font-weight: bold;
+            font-size: clamp(10px, 1.5vw, 13px);
+            letter-spacing: 1px;
+            text-shadow: 1px 1px 0 #0d131a;
+            pointer-events: none;
+            z-index: 15;
+        }
+        
+        .btn-group-vertical {  
+            display: flex;  
+            flex-direction: column;  
+            gap: 10px;  
+            width: 100%;  
+            max-width: 200px;  
+        }  
+        .btn-group-vertical button {  
+            width: 100%;
+            padding: 8px;  
+            font-size: clamp(12px, 2vw, 15px);  
+            font-family: 'Courier New', monospace;  
+            font-weight: bold;  
+            color: white;
+            border: 3px solid #577899;  
+            background: #283c50;
+            cursor: pointer;  
+            box-shadow: 0 4px 0 #131c26;
+        }  
+        .btn-group-vertical button:active {  
+            transform: translateY(3px);  
+            box-shadow: 0 1px 0 #131c26;  
+        }  
+        
+        /* --- PANEL: SETTINGS --- */  
+        #settingsPanel {  
+            position: absolute;  
+            top: 0; left: 0;  
+            width: 100%; height: 100%;  
+            background: rgba(13, 19, 26, 0.95);  
+            display: none;  
+            justify-content: center;  
+            align-items: center;  
+            z-index: 100;  
+            padding: 15px;  
+        }  
+        #settingsPanel.active { display: flex; }  
+        #settingsBox {  
+            width: 90%; height: 90%;  
+            max-width: 550px; max-height: 300px;
+            display: flex;  
+            flex-direction: column;  
+            border: 4px solid #3b5a78;
+            background: #1a2430;
+            padding: 15px;
+        }  
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .settings-header h2 {  
+            color: #fff;  
+            font-size: clamp(16px, 3.5vw, 24px);  
+            text-shadow: 2px 2px 0 #0d131a;
+        }  
+        #backBtn {  
+            background: #416180;  
+            color: #fff;  
+            border: 2px solid #577899;  
+            padding: 4px 14px;  
+            font-family: 'Courier New', monospace;  
+            font-weight: bold;  
+            font-size: clamp(11px, 1.8vw, 13px);
+            cursor: pointer;  
+            box-shadow: 0 3px 0 #131c26;
+        }  
+        #backBtn:active { transform: translateY(3px); box-shadow: 0 0px 0 #131c26; }  
+
+        .settings-grid {  
+            display: grid;  
+            grid-template-columns: 1fr 1fr;  
+            gap: 15px;  
+            flex: 1;
+        }  
+        .settings-item h3 {  
+            color: #8da399;  
+            font-size: clamp(11px, 2vw, 14px);  
+            margin-bottom: 6px;
+        }  
+        .settings-options { display: flex; flex-direction: column; gap: 6px; }  
+        .settings-item label {  
+            color: #fff;  
+            font-size: clamp(11px, 1.8vw, 13px);  
+            display: flex;  
+            align-items: center;
+            cursor: pointer;  
+        }  
+        .settings-item label input[type="radio"] {  
+            accent-color: #577899;  
+            margin-right: 8px;  
+            transform: scale(1.05);  
+        }  
+
+        /* --- SCREEN: IN GAMEPLAY --- */
+        #gameWrap {  
+            position: absolute;
+            top: 0; left: 0;  
+            width: 100%; height: 100%;  
+            display: none;  
+        }  
+        canvas#gameCanvas {  
+            display: block;  
+            width: 100%; height: 100%;  
+            image-rendering: pixelated;  
+        }  
+          
+        /* CONTROLLER POSITION FIX: Nyaman digenggam di layar penuh */
+        #ctrl {  
+            position: absolute;  
+            bottom: 6%; left: 0; right: 0;  
+            display: flex;  
+            justify-content: space-between;  
+            padding: 0 5%;  
+            pointer-events: none;  
+            z-index: 50;  
+        }  
+        .btn {  
+            pointer-events: auto !important;  
+            width: clamp(52px, 11vw, 65px); 
+            height: clamp(52px, 11vw, 65px);  
+            background: rgba(40, 60, 80, 0.85);  
+            border: 3px solid #577899;  
+            color: #fff;  
+            font-size: clamp(18px, 3.5vw, 24px);  
+            display: flex;  
+            align-items: center;  
+            justify-content: center;  
+            box-shadow: 0 4px 0 #131c26;  
+            border-radius: 6px;
+            cursor: pointer;  
+        }  
+        .btn:active { transform: translateY(3px); box-shadow: 0 1px 0 #131c26; }  
+        .btn-group { display: flex; gap: 10px; pointer-events: none !important; }  
+        .btn-group .btn { pointer-events: auto !important; }  
+          
+        /* JOYSTICK CONTAINER FIX */
+        #analogContainer {  
+            position: absolute;  
+            bottom: 6%; right: 5%;  
+            width: clamp(110px, 18vw, 135px); 
+            height: clamp(110px, 18vw, 135px);  
+            background: rgba(20, 27, 36, 0.7);  
+            border: 4px solid #3b5a78;  
+            border-radius: 50%;
+            display: none;  
+            z-index: 55;  
+        }  
+        #analogContainer.active { display: block; }  
+        #analogStick {  
+            position: absolute;  
+            width: clamp(40px, 6vw, 48px); 
+            height: clamp(40px, 6vw, 48px);  
+            border-radius: 50%;  
+            background: #577899;  
+            border: 3px solid #fff;
+            top: 50%; left: 50%;  
+            transform: translate(-50%, -50%);  
+        }  
+          
+        #hud {  
+            position: absolute;  
+            top: 12px; left: 14px;  
+            color: #fff;  
+            font-size: clamp(10px, 1.6vw, 13px);  
+            background: rgba(26, 36, 48, 0.9);  
+            padding: 6px 12px;  
+            border: 2px solid #3b5a78;  
+            z-index: 60;  
+            display: flex;  
+            align-items: center;  
+            gap: 10px;  
+        }  
+        #ingameSettingBtn {  
+            background: #416180;  
+            border: 1px solid #577899;  
+            color: #fff;  
+            padding: 3px 8px;  
+            cursor: pointer;  
+            font-family: 'Courier New', monospace;  
+            font-size: clamp(9px, 1.4vw, 12px);  
+        }  
+    </style>
+</head>  
+<body>  
+
+    <div class="ratio-wrapper">  
+        
+        <div id="loginScreen">  
+            <div id="loginBox">  
+                <h1>👾 PIXEL 2D IKY</h1>  
+                <p>✦ hi-fi retro adventure ✦</p>  
+                <div class="btn-group-vertical">  
+                    <button id="playBtn">START GAME</button>  
+                    <button id="settingBtn">SETTINGS</button>  
+                </div>  
+            </div>  
+            <div class="game-version">Versi 1.00,01</div>
+        </div>  
+
+        <div id="settingsPanel">  
+            <div id="settingsBox">  
+                <div class="settings-header">
+                    <h2>⚙ SETTINGS</h2>  
+                    <button id="backBtn">BACK</button>  
+                </div>
+                <div class="settings-grid">  
+                    <div class="settings-item">  
+                        <h3>DISPLAY</h3>  
+                        <div class="settings-options">
+                            <label><input type="radio" name="graphics" value="low" checked> PIXEL 8-BIT</label>  
+                            <label><input type="radio" name="graphics" value="medium"> PIXEL 16-BIT</label>  
+                            <label><input type="radio" name="graphics" value="ultra"> HI-FI PIXEL</label>  
+                        </div>
+                    </div>  
+                    <div class="settings-item">  
+                        <h3>CONTROLS</h3>  
+                        <div class="settings-options">
+                            <label><input type="radio" name="control" value="button" checked> D-PAD BUTTON</label>  
+                            <label><input type="radio" name="control" value="analog"> JOYSTICK</label>  
+                        </div>
+                    </div>  
+                </div>  
+            </div>  
+        </div>  
+
+        <div id="gameWrap">  
+            <canvas id="gameCanvas"></canvas>  
+            <div id="hud">  
+                <span>IKY WORLD</span>  
+                <button id="ingameSettingBtn">MENU</button>  
+            </div>  
+              
+            <div id="ctrl">  
+                <div class="btn-group">  
+                    <div class="btn" id="bL">◀</div>  
+                    <div class="btn" id="bR">▶</div>  
+                </div>  
+                <div class="btn-group" style="flex-direction:column; gap:6px;">  
+                    <div class="btn" id="bU">▲</div>  
+                    <div class="btn" id="bD">▼</div>  
+                </div>  
+            </div>  
+              
+            <div id="analogContainer">  
+                <div id="analogStick"></div>  
+            </div>  
+        </div>
+
+    </div>
+
+<script>  
+let settings = { graphics: 'low', control: 'button' };  
+  
+document.querySelectorAll('input[name="graphics"]').forEach(el => {  
+    el.addEventListener('change', function() { settings.graphics = this.value; });  
+});  
+  
+document.querySelectorAll('input[name="control"]').forEach(el => {  
+    el.addEventListener('change', function() {  
+        settings.control = this.value;  
+        if (this.value === 'button') {  
+            if (gameRunning && !isPaused) {  
+                document.getElementById('ctrl').style.display = 'flex';  
+                document.getElementById('analogContainer').style.display = 'none';  
+            }  
+        } else {  
+            if (gameRunning && !isPaused) {  
+                document.getElementById('ctrl').style.display = 'none';  
+                document.getElementById('analogContainer').style.display = 'block';  
+            }  
+        }  
+    });  
+});  
+  
+document.getElementById('settingBtn').addEventListener('click', function(e) {  
+    e.preventDefault(); document.getElementById('settingsPanel').classList.add('active');  
+});  
+
+document.getElementById('ingameSettingBtn').addEventListener('click', function(e) {  
+    e.preventDefault(); isPaused = true;   
+    document.getElementById('ctrl').style.display = 'none';  
+    document.getElementById('analogContainer').style.display = 'none';  
+    document.getElementById('settingsPanel').classList.add('active');  
+});  
+  
+document.getElementById('backBtn').addEventListener('click', function(e) {  
+    e.preventDefault(); document.getElementById('settingsPanel').classList.remove('active');  
+    if (gameRunning) {  
+        isPaused = false;  
+        if (settings.control === 'analog') {  
+            document.getElementById('ctrl').style.display = 'none';  
+            document.getElementById('analogContainer').style.display = 'block';  
+        } else {  
+            document.getElementById('ctrl').style.display = 'flex';  
+            document.getElementById('analogContainer').style.display = 'none';  
+        }  
+    }  
+});  
+
+// ============================================================  
+// WORLD MAP GENERATOR & DYNAMIC RESIZING HANDLER
+// ============================================================  
+const canvas = document.getElementById('gameCanvas');  
+const ctx = canvas.getContext('2d');  
+let W = window.innerWidth;  
+let H = window.innerHeight;  
+  
+const TILE = 20, MAP_SIZE = 250;  
+let COLS = Math.ceil(W/TILE)+3, ROWS = Math.ceil(H/TILE)+3;  
+let map = [];  
+let entities = []; 
+
+// Fungsi melacak perubahan ukuran layar agar canvas selalu Full Screen
+function resizeCanvas() {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+    COLS = Math.ceil(W/TILE)+3;
+    ROWS = Math.ceil(H/TILE)+3;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function genMap() {  
+    for (let y=0; y<MAP_SIZE; y++) {  
+        map[y] = [];  
+        for (let x=0; x<MAP_SIZE; x++) {  
+            let r = Math.random();  
+            if (r < 0.35) map[y][x] = 1;       
+            else if (r < 0.70) map[y][x] = 2;  
+            else map[y][x] = 3;                
+        }  
+    }  
+
+    for (let i=0; i<MAP_SIZE; i++) {  
+        let px = Math.sin(i*0.03)*40 + 120;  
+        for (let j=-2; j<3; j++) {  
+            let xx = Math.round(px + j), yy = i;  
+            if (xx>0 && xx<MAP_SIZE && yy>0 && yy<MAP_SIZE) map[yy][xx] = 6; 
+        }  
+    }  
+
+    for (let i = 8; i < MAP_SIZE - 8; i += 12) {
+        for (let j = 8; j < MAP_SIZE - 8; j += 12) {
+            if (Math.abs(i-50) < 12 && Math.abs(j-50) < 12) continue;
+            let rand = Math.random();
+
+            if (rand < 0.14) {
+                entities.push({type: 'house', x: j, y: i, w: 3, h: 2, color: ['#7c3f58','#3f5a7c','#6d5c3f','#3f6d4e'][Math.floor(Math.random()*4)]});
+            } else if (rand < 0.45) {
+                entities.push({type: 'tree_normal', x: j, y: i});
+            } else if (rand < 0.60) {
+                entities.push({type: 'tree_beringin', x: j, y: i});
+            } else if (rand < 0.85) {
+                entities.push({type: 'flower', x: j + Math.floor(Math.random()*4), y: i + Math.floor(Math.random()*4), flowerType: Math.random() > 0.5 ? 'rose' : 'tulip'});
+            }
+        }
+    }
+
+    entities.push({type: 'house', x: 46, y: 45, w: 3, h: 2, color: '#8c5333'});
+    entities.push({type: 'tree_beringin', x: 55, y: 44});
+    entities.push({type: 'flower', x: 44, y: 47, flowerType: 'rose'});
+    entities.push({type: 'flower', x: 45, y: 48, flowerType: 'tulip'});
+    entities.push({type: 'flower', x: 50, y: 48, flowerType: 'rose'});
+}  
+genMap();  
+  
+// ============================================================  
+// RETRO PIXEL ENGINE GRAPHICS
+// ============================================================  
+function drawPixelBlock(x, y, w, h, size, matrix, colors) {
+    for (let r = 0; r < matrix.length; r++) {
+        for (let c = 0; c < matrix[r].length; c++) {
+            let colorIdx = matrix[r][c];
+            if (colorIdx > 0) {
+                ctx.fillStyle = colors[colorIdx - 1];
+                ctx.fillRect(x + c * size, y + r * size, size, size);
+            }
+        }
+    }
+}
+
+function drawTreeNormal(px, py) {  
+    ctx.fillStyle = '#2b1a10'; ctx.fillRect(px+15, py+24, 10, 16);  
+    ctx.fillStyle = '#1c110a'; ctx.fillRect(px+15, py+24, 3, 16);  
+    
+    let m = [
+        [0,1,1,1,0],
+        [1,1,2,1,1],
+        [1,2,2,3,1],
+        [1,1,3,3,1],
+        [0,1,1,1,0]
+    ];
+    drawPixelBlock(px, py, 40, 40, 8, m, ['#224720', '#30632d', '#4d8c47']);
+}  
+
+function drawTreeBeringin(px, py) {
+    ctx.fillStyle = '#23150d'; ctx.fillRect(px+10, py+24, 28, 24); 
+    ctx.fillStyle = '#170e09'; 
+    ctx.fillRect(px+14, py+24, 4, 24); ctx.fillRect(px+26, py+24, 3, 24); 
+
+    let m = [
+        [0,0,1,1,1,1,0,0],
+        [0,1,1,2,2,1,1,0],
+        [1,1,2,2,3,3,1,1],
+        [1,2,2,3,3,4,4,1],
+        [1,1,3,3,4,4,1,1],
+        [0,1,1,1,1,1,1,0]
+    ];
+    drawPixelBlock(px-10, py-10, 60, 60, 7, m, ['#132b11', '#1e421b', '#30632d', '#4ca145']);
+}
+
+function drawFlowerPerfect(px, py, fType) {
+    ctx.fillStyle = '#224d1c'; ctx.fillRect(px+8, py+10, 3, 10);
+    ctx.fillRect(px+6, py+12, 3, 3);
+    
+    if (fType === 'rose') {
+        ctx.fillStyle = '#801111'; ctx.fillRect(px+5, py+4, 9, 6);
+        ctx.fillStyle = '#d92b2b'; ctx.fillRect(px+7, py+2, 5, 5);
+        ctx.fillStyle = '#ff6666'; ctx.fillRect(px+9, py+2, 2, 2);
+    } else { 
+        ctx.fillStyle = '#b38600'; ctx.fillRect(px+5, py+4, 9, 6);
+        ctx.fillStyle = '#ffcc00'; ctx.fillRect(px+7, py+2, 5, 6);
+        ctx.fillStyle = '#ffee55'; ctx.fillRect(px+7, py+2, 2, 3);
+    }
+}
+
+function drawGrass(px, py, type) {  
+    ctx.fillStyle = type===3 ? '#3a6629' : '#294d1c';  
+    ctx.fillRect(px+4, py+6, 2, 3); ctx.fillRect(px+14, py+14, 3, 2);  
+}  
+
+function drawHousePerfect(px, py, wallColor) {  
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(px-2, py+16, 64, 34);
+    ctx.fillStyle = wallColor; ctx.fillRect(px, py+14, 60, 34);  
+
+    ctx.fillStyle = '#3a1414'; ctx.fillRect(px-6, py+10, 72, 6);
+    ctx.fillRect(px-2, py+4, 64, 6);
+    ctx.fillRect(px+4, py-2, 52, 6);
+    ctx.fillRect(px+12, py-8, 36, 6);
+    ctx.fillRect(px+22, py-12, 16, 4);
+
+    ctx.fillStyle = '#211007'; ctx.fillRect(px+24, py+24, 14, 24); 
+    ctx.fillStyle = '#ffda44'; ctx.fillRect(px+6, py+22, 10, 12); 
+    ctx.fillStyle = '#1c2836'; ctx.fillRect(px+7, py+23, 8, 10);
+    ctx.fillStyle = '#ffda44'; ctx.fillRect(px+44, py+22, 10, 12); 
+    ctx.fillRect(px+34, py+34, 2, 3); 
+}  
+
+function drawPlayer(px, py, frame) {  
+    ctx.fillStyle = '#1f3c4d'; ctx.fillRect(px+6, py+10, 12, 13); 
+    ctx.fillStyle = '#fce2c4'; ctx.fillRect(px+5, py+3, 14, 8);   
+    ctx.fillStyle = '#11161b'; ctx.fillRect(px+5, py+1, 14, 3);   
+    ctx.fillRect(px+5, py+4, 3, 4);                               
+    ctx.fillRect(px+7, py+6, 2, 2); ctx.fillRect(px+15, py+6, 2, 2); 
+    
+    let isMoving = keys.up||keys.down||keys.left||keys.right||(settings.control==='analog'&&analogDragging);
+    let legOffset = isMoving ? Math.sin(frame * 0.12) * 3 : 0;  
+    ctx.fillStyle = '#11161b';   
+    ctx.fillRect(px+5, py+23 + legOffset, 5, 4); 
+    ctx.fillRect(px+14, py+23 - legOffset, 5, 4);  
+}  
+  
+// ============================================================  
+// CONTROLS & ENGINE CALCULATION SYSTEM  
+// ============================================================  
+let analogX = 0, analogY = 0, analogDragging = false, touchId = null, mouseDown = false;  
+const analogEl = document.getElementById('analogContainer'), stickEl = document.getElementById('analogStick');  
+  
+function updateAnalogPos(clientX, clientY) {  
+    if (isPaused) return;  
+    const rect = analogEl.getBoundingClientRect();  
+    const centerX = rect.left + (rect.width / 2), centerY = rect.top + (rect.height / 2);  
+    const maxRadius = (rect.width / 2) - 10;  
+    let dx = clientX - centerX, dy = clientY - centerY;  
+    const dist = Math.sqrt(dx * dx + dy * dy);  
+    let cDx = dist > maxRadius ? (dx / dist) * maxRadius : dx;  
+    let cDy = dist > maxRadius ? (dy / dist) * maxRadius : dy;  
+    stickEl.style.transform = `translate3d(calc(-50% + ${cDx}px), calc(-50% + ${cDy}px), 0)`;  
+    analogX = Math.abs(cDx/maxRadius) < 0.15 ? 0 : cDx/maxRadius;  
+    analogY = Math.abs(cDy/maxRadius) < 0.15 ? 0 : cDy/maxRadius;  
+    analogDragging = true;  
+}  
+function resetAnalogPos() {  
+    stickEl.style.transform = 'translate3d(-50%, -50%, 0)';  
+    analogX = 0; analogY = 0; analogDragging = false; touchId = null;  
+}  
+analogEl.addEventListener('touchstart', function(e) {  
+    e.preventDefault(); if (touchId !== null || isPaused) return;  
+    const t = e.changedTouches[0]; touchId = t.identifier; updateAnalogPos(t.clientX, t.clientY);  
+});  
+window.addEventListener('touchmove', function(e) {  
+    if (touchId === null || isPaused) return;  
+    for (let t of e.changedTouches) { if (t.identifier === touchId) { updateAnalogPos(t.clientX, t.clientY); e.preventDefault(); } }  
+});  
+window.addEventListener('touchend', function(e) { if (touchId !== null) { for (let t of e.changedTouches) { if (t.identifier === touchId) resetAnalogPos(); } } });  
+analogEl.addEventListener('mousedown', function(e) { e.preventDefault(); if (!isPaused) { mouseDown = true; updateAnalogPos(e.clientX, e.clientY); } });  
+window.addEventListener('mousemove', function(e) { if (mouseDown && !isPaused) updateAnalogPos(e.clientX, e.clientY); });  
+window.addEventListener('mouseup', function() { if (mouseDown) { mouseDown = false; resetAnalogPos(); } });  
+  
+let player = { x:50, y:50 }, keys = { up:false, down:false, left:false, right:false };  
+let frame = 0, gameRunning = false, isPaused = false, gameInterval = null, cam = {x:0, y:0};  
+
+['bU','bD','bL','bR'].forEach(id => {  
+    let el = document.getElementById(id);  
+    let key = id==='bU'?'up':id==='bD'?'down':id==='bL'?'left':'right';  
+    el.addEventListener('touchstart', e=>{ e.preventDefault(); if(!isPaused) keys[key]=true; });  
+    el.addEventListener('touchend', e=>{ e.preventDefault(); keys[key]=false; });  
+});  
+document.addEventListener('keydown', e=>{  
+    if (isPaused) return;  
+    if (e.key==='w'||e.key==='ArrowUp') keys.up=true; if (e.key==='s'||e.key==='ArrowDown') keys.down=true;  
+    if (e.key==='a'||e.key==='ArrowLeft') keys.left=true; if (e.key==='d'||e.key==='ArrowRight') keys.right=true;  
+});  
+document.addEventListener('keyup', e=>{  
+    if (e.key==='w'||e.key==='ArrowUp') keys.up=false; if (e.key==='s'||e.key==='ArrowDown') keys.down=false;  
+    if (e.key==='a'||e.key==='ArrowLeft') keys.left=false; if (e.key==='d'||e.key==='ArrowRight') keys.right=false;  
+});  
+
+function checkCollision(nextX, nextY) {
+    for (let ent of entities) {
+        if (ent.type === 'house') {
+            let buffer = 0.4; 
+            if (nextX > ent.x - buffer && nextX < ent.x + ent.w + buffer &&
+                nextY > ent.y - buffer && nextY < ent.y + ent.h + buffer) {
+                return true; 
+            }
+        }
+    }
+    return false;
+}
+  
+function update() {  
+    if (isPaused) return;  
+    let dx = settings.control==='analog'?analogX:(keys.left?-1:keys.right?1:0);  
+    let dy = settings.control==='analog'?analogY:(keys.up?-1:keys.down?1:0);  
+    if (settings.control!=='analog' && dx!==0 && dy!==0) { let len=Math.sqrt(dx*dx+dy*dy); dx/=len; dy/=len; }  
+    
+    let targetX = player.x + dx * 0.28;
+    let targetY = player.y + dy * 0.28;
+
+    if (!checkCollision(targetX, player.y)) { player.x = Math.max(1, Math.min(MAP_SIZE-2, targetX)); }
+    if (!checkCollision(player.x, targetY)) { player.y = Math.max(1, Math.min(MAP_SIZE-2, targetY)); }
+}  
+
+function smoothCam() {  
+    if (isPaused) return;  
+    let tx = Math.max(0, Math.min(MAP_SIZE-W/TILE, player.x-W/(2*TILE)));  
+    let ty = Math.max(0, Math.min(MAP_SIZE-H/TILE, player.y-H/(2*TILE)));  
+    cam.x += (tx-cam.x)*0.13; cam.y += (ty-cam.y)*0.13;  
+}  
+  
+function drawGame() {  
+    if (isPaused) return; frame++; ctx.clearRect(0,0,W,H);  
+    let sx=Math.floor(cam.x), sy=Math.floor(cam.y), ex=sx+COLS, ey=sy+ROWS;  
+    
+    for (let y=sy; y<ey; y++) {  
+        for (let x=sx; x<ex; x++) {  
+            if (x>=0 && x<MAP_SIZE && y>=0 && y<MAP_SIZE) {  
+                let tile = map[y][x], px = (x-cam.x)*TILE, py = (y-cam.y)*TILE;  
+                ctx.fillStyle = tile===1 ? '#1c3019' : tile===2 ? '#162814' : tile===6 ? '#403321' : '#1b3318';  
+                ctx.fillRect(px, py, TILE, TILE);  
+                if (tile<=3) drawGrass(px, py, tile);  
+            }  
+        }  
+    }  
+    
+    entities.forEach(ent => {
+        if (ent.x >= sx - 4 && ent.x <= ex + 4 && ent.y >= sy - 4 && ent.y <= ey + 4) {
+            let screenX = (ent.x - cam.x) * TILE;
+            let screenY = (ent.y - cam.y) * TILE;
+
+            if (ent.type === 'house') {
+                drawHousePerfect(screenX, screenY, ent.color);
+            } else if (ent.type === 'tree_normal') {
+                drawTreeNormal(screenX, screenY);
+            } else if (ent.type === 'tree_beringin') {
+                drawTreeBeringin(screenX, screenY);
+            } else if (ent.type === 'flower') {
+                drawFlowerPerfect(screenX, screenY, ent.flowerType);
+            }
+        }
+    });
+
+    drawPlayer((player.x-cam.x)*TILE-4, (player.y-cam.y)*TILE-6, frame);  
+    
+    let mmSize = 60, mmX = W-mmSize-10, mmY = 10; 
+    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.fillRect(mmX, mmY, mmSize, mmSize);  
+    ctx.strokeStyle = '#3b5a78'; ctx.strokeRect(mmX, mmY, mmSize, mmSize);
+    ctx.fillStyle = '#ff3366'; ctx.fillRect(mmX+(player.x*(mmSize/MAP_SIZE)), mmY+(player.y*(mmSize/MAP_SIZE)), 3, 3);  
+}  
+  
+function startGame() {  
+    if (settings.control === 'analog') {  
+        document.getElementById('ctrl').style.display = 'none';  
+        document.getElementById('analogContainer').style.display = 'block';  
+    } else {  
+        document.getElementById('ctrl').style.display = 'flex';  
+        document.getElementById('analogContainer').style.display = 'none';  
+    }  
+    gameRunning = true; isPaused = false;  
+    if(gameInterval) clearInterval(gameInterval);
+    gameInterval = setInterval(function() { if(gameRunning) { update(); smoothCam(); drawGame(); } }, 1000 / 30);  
+}  
+  
+document.getElementById('playBtn').addEventListener('click', function(e) {  
+    e.preventDefault();  
+    document.getElementById('loginScreen').classList.add('hidden');  
+    document.getElementById('gameWrap').style.display = 'block';  
+    startGame();  
+});  
+</script>  
+</body>  
+</html>
